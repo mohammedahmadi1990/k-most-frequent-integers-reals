@@ -1,7 +1,7 @@
 import sys
 
 def save_file(output_file, integers, reals):
-    """ Write to output file """
+    """ Write to output file: I/O """
     file = open(output_file, "w")
     kk = len(integers[0])
     if kk>0:
@@ -16,7 +16,7 @@ def save_file(output_file, integers, reals):
     file.close()
 
 def read_file(input_file):
-    """ Read input file """
+    """ Read input file: I/O """
     file = open(input_file, "r")
     text = file.read()
     file.close()
@@ -24,17 +24,19 @@ def read_file(input_file):
 
 def find_k_most_integers( k , input_text ):
     """ Find k most integer numbers """
-    k = int(k)
-    splitted_numbers = input_text.split()
+    temp = input_text
+    if temp.find(',')!=-1:
+        temp = temp.replace(',',' ')
+    splitted_numbers = temp.split()
     pure_integers = list(filter(lambda item: test_integer(item), splitted_numbers))
-    unique_integers = list(set(pure_integers))
+    unique_integers = list(unique_list(pure_integers))
     freqs = list(map(lambda item: freq_count(pure_integers,item),unique_integers))
     parallel_list = list(map(lambda x,y: (x,y) ,unique_integers,freqs))
-    after_sort = bubble_sort(parallel_list)
+    after_sort = bubble_sort_tuple(parallel_list)
     final_freqs = list(map (lambda item:(item[1]),after_sort))
     if len(final_freqs)>k:
-        freq_lst = list(set(final_freqs))
-        min_freq = min(freq_lst[len(freq_lst)-k:])
+        freq_lst = bubble_sort_list(unique_list(final_freqs))
+        min_freq = min(freq_lst[:k])
         ks = len(list(filter(lambda x: x[1]>=min_freq,after_sort)))
     else:
         ks = k
@@ -44,17 +46,19 @@ def find_k_most_integers( k , input_text ):
 
 def find_k_most_reals( k , input_text ):
     """ Find k most real numbers """
-    k = int(k)
-    splitted_reals = input_text.split()
+    temp = input_text
+    if temp.find(',') != -1:
+        temp = temp.replace(',', ' ')
+    splitted_reals = temp.split()
     pure_reals = list(filter(lambda item: test_real(item), splitted_reals))
-    unique_reals = list(set(pure_reals))
+    unique_reals = list(unique_list(pure_reals))
     freqs = list(map(lambda item: freq_count(pure_reals, item), unique_reals))
     parallel_list = list(map(lambda x, y: (x, y), unique_reals, freqs))
-    after_sort = bubble_sort(parallel_list)
+    after_sort = bubble_sort_tuple(parallel_list)
     final_freqs = list(map(lambda item: (item[1]), after_sort))
     if len(final_freqs) > k:
-        freq_lst = list(set(final_freqs))
-        min_freq = min(freq_lst[len(freq_lst) - k:])
+        freq_lst = bubble_sort_list(unique_list(final_freqs))
+        min_freq = min(freq_lst[:k])
         ks = len(list(filter(lambda x: x[1] >= min_freq, after_sort)))
     else:
         ks = k
@@ -65,8 +69,8 @@ def find_k_most_reals( k , input_text ):
 def test_integer(s):
     """ Method to verify integer number"""
     try:
-        int(s)
-        return True
+        float(s)
+        return float(s).is_integer()
     except ValueError:
         return False
 
@@ -78,6 +82,11 @@ def test_real(s):
     except ValueError:
         return False
 
+def unique_list(lst):
+    new_lst = []
+    list(filter(lambda x: new_lst.append(x) if x not in new_lst else None, lst))
+    return new_lst
+
 def freq_count(lst,key):
     """ Counts freq. of key in the lst """
     if lst == []:
@@ -87,25 +96,47 @@ def freq_count(lst,key):
     else:
         return 0 + freq_count(lst[1:],key)
 
-def bubble_sort(ar):
-    """ Customized Recursive Bubble Sort """
+def bubble_sort_tuple(ar):
+    """ Customized Recursive Bubble Sort for tuple """
     if len(ar) <= 1:
         return ar
     if len(ar) == 2:
-        return ar if ar[0][1] > ar[1][1] else (ar if (ar[0][1] == ar[1][1] and 0<ar[1][1] and 1<ar[1][1]) else [ar[1], ar[0]])
+        if ar[0][1] > ar[1][1]:
+            return ar
+        elif ar[0][1] == ar[1][1]:
+            if float(ar[0][0]) < float(ar[1][0]):
+                return ar
+            else:
+                return [ar[1], ar[0]]
+        else:
+            [ar[1], ar[0]]
+
     a, b = ar[0], ar[1]
     bs = ar[2:]
     res = []
-    if a[1] >= b[1]:
-        if a[1] == b[1] and 1>a[1]:
-            res = [b] + bubble_sort([a] + bs)
-        else:
-            res = [a] + bubble_sort([b] + bs)
+    if a[1] > b[1]:
+        res = [a] + bubble_sort_tuple([b] + bs)
     else:
-        res = [b] + bubble_sort([a] + bs)
-    return bubble_sort(res[:-1]) + res[-1:]
+        if a[1] == b[1]:
+            res = [a] + bubble_sort_tuple([b] + bs)
+        else:
+            res = [b] + bubble_sort_tuple([a] + bs)
+    return bubble_sort_tuple(res[:-1]) + res[-1:]
 
-
+def bubble_sort_list(ar):
+    """ Customized Recursive Bubble Sort for list """
+    if len(ar) <= 1:
+        return ar
+    if len(ar) == 2:
+        return ar if ar[0] > ar[1] else [ar[1], ar[0]]
+    a, b = ar[0], ar[1]
+    bs = ar[2:]
+    res = []
+    if a > b:
+        res = [a] + bubble_sort_list([b] + bs)
+    else:
+        res = [b] + bubble_sort_list([a] + bs)
+    return bubble_sort_list(res[:-1]) + res[-1:]
 
 ############### APPLICATION ###############
 ### Read args
@@ -113,10 +144,11 @@ if len(sys.argv)>=2 and len(sys.argv[1].split(";"))==3:
     # validate input args
     args = sys.argv[1]
     k = args.split(";")[0].split("=")[1]
-    if(not test_integer(k)):
+    if(not test_integer(int(k))):
         # validate input k
         print("Error! Valid k is required!")
         exit()
+    k = int(k)
     input_file = args.split(";")[1].split("=")[1]
     output_file = args.split(";")[2].split("=")[1]
 else:
